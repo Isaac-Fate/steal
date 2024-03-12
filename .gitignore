@@ -1,0 +1,20 @@
+# Rust built files
+/target
+
+# MacOS hidden files
+**/.DS_Store
+
+# VS Code settings
+.vscode
+
+# Temporary files
+/tmp
+
+# Playground
+/playground
+
+# Large data directory
+/data
+
+# Configuration and secret files
+/.env
