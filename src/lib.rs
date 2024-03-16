@@ -7,4 +7,5 @@ pub use error::Error;
 mod cli;
 pub use cli::run_app;
 
-mod download;
+mod multipart;
+pub use multipart::download;
