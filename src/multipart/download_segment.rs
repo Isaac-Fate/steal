@@ -15,7 +15,7 @@ pub async fn download_segment(
     start: u64,
     end: u64,
     file: Arc<Mutex<File>>,
-    progress_bar: Arc<Mutex<ProgressBar>>
+    progress_bar: &ProgressBar
 ) -> Result<()> {
     // Get data bytes stream
     let mut bytes_stream = get_segment_data_stream(client, url, start, end).await?;
@@ -44,7 +44,7 @@ pub async fn download_segment(
         file_offset += chunk_size;
 
         // Update the progress bar
-        progress_bar.lock().await.inc(chunk_size);
+        progress_bar.inc(chunk_size);
     }
 
     Ok(())

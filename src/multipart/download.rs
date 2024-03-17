@@ -1,5 +1,5 @@
 use std::{ path::Path, sync::Arc };
-use indicatif::ProgressBar;
+use indicatif::{ ProgressBar, ProgressStyle };
 use reqwest::Client;
 use tokio::{ fs::File, sync::Mutex };
 
@@ -18,7 +18,7 @@ pub async fn download<P: AsRef<Path>>(
     // Create a file
     let file_name = url.split('/').last().unwrap();
     let file_path = dest_dir.as_ref().join(file_name);
-    let file = File::create(file_path).await?;
+    let file = File::create(&file_path).await?;
 
     // Wrap file in an Arc
     let file = Arc::new(Mutex::new(file));
@@ -35,10 +35,21 @@ pub async fn download<P: AsRef<Path>>(
         .parse::<u64>()
         .unwrap();
 
-    // Create a progress bar, and
-    // wrap it in an Arc
+    // Create a progress bar
     let progress_bar = ProgressBar::new(file_size);
-    let progress_bar = Arc::new(Mutex::new(progress_bar));
+
+    // Style the progress bar
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})"
+            )
+            .unwrap()
+            .progress_chars("#>-")
+    );
+
+    // Wrap the progress bar in an Arc
+    // let progress_bar = Arc::new(Mutex::new(progress_bar));
 
     // Split the data into multiple segments
     let ranges = split_data(file_size, segment_size);
@@ -57,10 +68,17 @@ pub async fn download<P: AsRef<Path>>(
             let file = Arc::clone(&file);
 
             // Clone the progress bar
-            let progress_bar = Arc::clone(&progress_bar);
+            //
+            // The progress bar is wrapped in an Arc so that it can be shared between multiple tasks
+            //
+            // https://arc.net/l/quote/scymebdb
+            // The progress bar is an Arc around its internal state.
+            // When the progress bar is cloned it just increments the refcount (so the original and its clone share the same state).
+            //
+            let progress_bar = progress_bar.clone();
 
             tokio::spawn(async move {
-                download_segment(client, &url, start, end, file, progress_bar).await.unwrap();
+                download_segment(client, &url, start, end, file, &progress_bar).await.unwrap();
             })
         })
         .collect();
@@ -69,6 +87,10 @@ pub async fn download<P: AsRef<Path>>(
     while let Some(task) = tasks.pop() {
         task.await?;
     }
+
+    // Prompt that the download is complete
+    progress_bar.finish();
+    println!("Saved to {}", file_path.display());
 
     Ok(())
 }

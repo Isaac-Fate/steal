@@ -8,4 +8,3 @@ mod cli;
 pub use cli::run_app;
 
 mod multipart;
-pub use multipart::download;
