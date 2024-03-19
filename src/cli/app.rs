@@ -4,7 +4,7 @@ use reqwest::Client;
 
 use crate::{ Result, multipart::download };
 use super::{
-    greet::{ greet_command, handle_greet_command },
+    debug::{ debug_command, handle_debug_command },
     info::{ handle_info_command, info_command },
 };
 
@@ -12,8 +12,8 @@ pub async fn run_app() -> Result<()> {
     let command = create_command();
     let matches = command.get_matches();
 
-    // Handle greet command
-    handle_greet_command(&matches).await?;
+    // Handle debug command
+    handle_debug_command(&matches).await?;
 
     // Handle info command
     handle_info_command(&matches).await?;
@@ -30,7 +30,7 @@ pub async fn run_app() -> Result<()> {
     let mb = matches.get_one::<u64>("mb").unwrap_or(&0).to_owned();
     let segment_size = kb * 1024 + mb * 1024 * 1024;
 
-    // Validate the chunk size
+    // Validate the segment size
     if segment_size == 0 {
         println!("Segment size must be greater than 0");
         exit(1);
@@ -91,8 +91,8 @@ fn create_command() -> Command {
                 .help("Part of each segment size in MB")
         )
 
-        // Greet command
-        .subcommand(greet_command())
+        // Debug command
+        .subcommand(debug_command())
 
         // Command to get information of reponse headers
         .subcommand(info_command())

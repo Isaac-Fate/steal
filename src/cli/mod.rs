@@ -1,5 +1,5 @@
 mod app;
-mod greet;
+mod debug;
 mod info;
 
 pub use app::run_app;
