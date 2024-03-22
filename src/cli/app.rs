@@ -8,22 +8,34 @@ use super::{
     info::{ handle_info_command, info_command },
 };
 
-pub async fn run_app() -> Result<()> {
-    let command = create_command();
-    let matches = command.get_matches();
+pub fn run_app() -> Result<()> {
+    // Main app
+    let app = app();
+
+    // Get matches
+    let matches: clap::ArgMatches = app.get_matches();
 
     // Handle debug command
-    handle_debug_command(&matches).await?;
+    handle_debug_command(&matches)?;
 
     // Handle info command
-    handle_info_command(&matches).await?;
+    handle_info_command(&matches)?;
 
+    // Resource URL
     let url = matches.get_one::<String>("url").unwrap().to_owned();
+
+    // Destination directory
     let dest_dir = if let Some(dest_dir) = matches.get_one::<PathBuf>("dest-dir") {
         dest_dir.to_owned()
     } else {
         std::env::current_dir()?
     };
+
+    // Number of threads
+    let num_threads = matches
+        .get_one::<usize>("num-threads")
+        .unwrap_or(&num_cpus::get())
+        .to_owned();
 
     // Calculate the chunk size
     let kb = matches.get_one::<u64>("kb").unwrap_or(&0).to_owned();
@@ -36,20 +48,34 @@ pub async fn run_app() -> Result<()> {
         exit(1);
     }
 
+    // Create a tokio runtime
+    let runtime = tokio::runtime::Builder
+        ::new_multi_thread()
+        .worker_threads(num_threads)
+        .enable_all()
+        .build()?;
+
     // Create an HTTP client
     let client = Client::builder()
         .timeout(Duration::from_secs(60 * 60 * 24))
         .build()?;
 
     // Download!
-    download(&client, &url, segment_size, &dest_dir).await?;
+    runtime.block_on(async {
+        println!("Using {} threads", num_threads);
+        download(&client, &url, segment_size, dest_dir).await
+    })?;
 
     Ok(())
 }
 
-fn create_command() -> Command {
+fn app() -> Command {
     Command::new("Steal")
         .about("Download data from the internet quickly as if you were stealing from it 👻")
+
+        // Display number of CPUs available on the machine
+        .after_help(format!("Number of CPUs: {}", num_cpus::get()))
+
         // If the user uses a subcommand,
         // then the args required by the main app are negated,
         // which is what I want!
@@ -71,6 +97,15 @@ fn create_command() -> Command {
                 .value_name("DEST DIR")
                 .value_parser(value_parser!(PathBuf))
                 .help("Destination directory, defaults to current directory")
+        )
+        .arg(
+            Arg::new("num-threads")
+                .short('t')
+                .long("threads")
+                .required(false)
+                .value_name("NUM THREADS")
+                .value_parser(value_parser!(usize))
+                .help("Number of threads to use for downloading")
         )
         .arg(
             Arg::new("kb")

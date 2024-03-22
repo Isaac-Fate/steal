@@ -19,7 +19,7 @@ pub fn debug_command() -> Command {
         .hide(true)
 }
 
-pub async fn handle_debug_command(matches: &ArgMatches) -> Result<()> {
+pub fn handle_debug_command(matches: &ArgMatches) -> Result<()> {
     if let Some(matches) = matches.subcommand_matches("debug") {
         if let Some(number) = matches.get_one::<u64>("number") {
             let number = number.to_owned();

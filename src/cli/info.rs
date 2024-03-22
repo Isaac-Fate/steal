@@ -1,7 +1,7 @@
 use std::process::exit;
 use clap::{ value_parser, Arg, ArgMatches, Command };
 use reqwest::Client;
-use crate::{ Result, multipart::get_headers };
+use crate::{ Result, get_headers };
 
 pub fn info_command() -> Command {
     Command::new("info")
@@ -15,21 +15,27 @@ pub fn info_command() -> Command {
         )
 }
 
-pub async fn handle_info_command(matches: &ArgMatches) -> Result<()> {
-    if let Some(matches) = matches.subcommand_matches("info") {
-        // Get URL
-        let url = matches.get_one::<String>("url").unwrap().to_owned();
+pub fn handle_info_command(matches: &ArgMatches) -> Result<()> {
+    // Create a tokio runtime
+    let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
 
-        // Create an HTTP client
-        let client = Client::new();
+    runtime.block_on(async {
+        if let Some(matches) = matches.subcommand_matches("info") {
+            // Get URL
+            let url = matches.get_one::<String>("url").unwrap().to_owned();
 
-        // Get headers
-        let headers = get_headers(&client, &url).await?;
+            // Create an HTTP client
+            let client = Client::new();
 
-        // Print headers
-        println!("{:#?}", headers);
+            // Get headers
+            let headers = get_headers(&client, &url).await.unwrap();
 
-        exit(0);
-    }
+            // Print headers
+            println!("{:#?}", headers);
+
+            exit(0);
+        }
+    });
+
     Ok(())
 }

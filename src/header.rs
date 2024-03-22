@@ -1,7 +1,25 @@
 use reqwest::{ header::{ HeaderMap, HeaderValue, USER_AGENT }, Client };
-use crate::{ Result, Error };
-use super::constants::USER_AGENT_VALUE;
+use crate::{ Result, Error, USER_AGENT_VALUE };
 
+pub struct ResponseHeaderInfo {
+    pub content_length: Option<u64>,
+}
+
+/// Get the response headers, and extract the information of interests.
+pub async fn get_header_info(client: &Client, url: &str) -> Result<ResponseHeaderInfo> {
+    // Get the headers
+    let headers = get_headers(client, url).await?;
+
+    // Get the content length
+    let content_length = headers
+        .get("content-length")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.parse::<u64>().ok());
+
+    Ok(ResponseHeaderInfo { content_length })
+}
+
+/// Get the reponse headers as a `HeaderMap`.
 pub async fn get_headers(client: &Client, url: &str) -> Result<HeaderMap> {
     // Prepare the headers
     let mut headers = HeaderMap::new();

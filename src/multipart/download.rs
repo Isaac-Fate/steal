@@ -3,8 +3,8 @@ use indicatif::{ ProgressBar, ProgressStyle };
 use reqwest::Client;
 use tokio::{ fs::File, sync::Mutex };
 
-use crate::Result;
-use super::{ header::get_headers, download_segment::download_segment };
+use crate::{ Result, header::get_header_info };
+use super::download_segment::download_segment;
 
 pub async fn download<P: AsRef<Path>>(
     client: &Client,
@@ -23,17 +23,11 @@ pub async fn download<P: AsRef<Path>>(
     // Wrap file in an Arc
     let file = Arc::new(Mutex::new(file));
 
-    // Get response headers
-    let headers = get_headers(&client, url).await?;
+    // Get response header info
+    let header_info = get_header_info(&client, url).await?;
 
     // Get the file size
-    let file_size = headers
-        .get("content-length")
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
+    let file_size = header_info.content_length.unwrap();
 
     // Create a progress bar
     let progress_bar = ProgressBar::new(file_size);

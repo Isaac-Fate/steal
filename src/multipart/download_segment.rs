@@ -6,8 +6,7 @@ use futures::{ Stream, StreamExt };
 use bytes::Bytes;
 use reqwest::header::{ HeaderMap, HeaderValue, USER_AGENT, RANGE };
 
-use crate::{ Result, Error };
-use super::constants::USER_AGENT_VALUE;
+use crate::{ Result, Error, USER_AGENT_VALUE };
 
 pub async fn download_segment(
     client: Arc<Client>,
