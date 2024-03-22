@@ -9,11 +9,18 @@ use super::download_segment::download_segment;
 pub async fn download<P: AsRef<Path>>(
     client: &Client,
     url: &str,
-    segment_size: u64,
+    segment_size: Option<u64>,
+    num_threads: usize,
     dest_dir: P
 ) -> Result<()> {
     // Wrap client in an Arc
     let client = Arc::new(client.to_owned());
+
+    // Get the response heaer info
+    let header_info = get_header_info(&client, &url).await?;
+
+    // Get the file size
+    let file_size = header_info.content_length.unwrap();
 
     // Create a file
     let file_name = url.split('/').last().unwrap();
@@ -22,12 +29,6 @@ pub async fn download<P: AsRef<Path>>(
 
     // Wrap file in an Arc
     let file = Arc::new(Mutex::new(file));
-
-    // Get response header info
-    let header_info = get_header_info(&client, url).await?;
-
-    // Get the file size
-    let file_size = header_info.content_length.unwrap();
 
     // Create a progress bar
     let progress_bar = ProgressBar::new(file_size);
@@ -42,8 +43,12 @@ pub async fn download<P: AsRef<Path>>(
             .progress_chars("#>-")
     );
 
-    // Wrap the progress bar in an Arc
-    // let progress_bar = Arc::new(Mutex::new(progress_bar));
+    // Determine the segment size
+    // If the segment size is not specified, use the file size divided by the number of threads
+    let segment_size = match segment_size {
+        Some(segment_size) => segment_size,
+        None => file_size / (num_threads as u64),
+    };
 
     // Split the data into multiple segments
     let ranges = split_data(file_size, segment_size);
@@ -135,7 +140,7 @@ mod tests {
         let dest_dir = tempfile::tempdir()?;
 
         // Download!
-        download(&client, url, 1024 * 1024 * 50, dest_dir.path()).await?;
+        download(&client, url, Some(1024 * 1024 * 50), num_cpus::get(), dest_dir.path()).await?;
 
         Ok(())
     }

@@ -1,4 +1,4 @@
-use std::{ path::PathBuf, process::exit, time::Duration };
+use std::{ path::PathBuf, time::Duration };
 use clap::{ value_parser, Arg, Command };
 use reqwest::Client;
 
@@ -43,10 +43,7 @@ pub fn run_app() -> Result<()> {
     let segment_size = kb * 1024 + mb * 1024 * 1024;
 
     // Validate the segment size
-    if segment_size == 0 {
-        println!("Segment size must be greater than 0");
-        exit(1);
-    }
+    let segment_size = if segment_size == 0 { None } else { Some(segment_size) };
 
     // Create a tokio runtime
     let runtime = tokio::runtime::Builder
@@ -63,7 +60,7 @@ pub fn run_app() -> Result<()> {
     // Download!
     runtime.block_on(async {
         println!("Using {} threads", num_threads);
-        download(&client, &url, segment_size, dest_dir).await
+        download(&client, &url, segment_size, num_threads, dest_dir).await
     })?;
 
     Ok(())
