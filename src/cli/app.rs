@@ -68,6 +68,10 @@ pub fn run_app() -> Result<()> {
 
 fn app() -> Command {
     Command::new("Steal")
+        // Version associated with this Cargo package
+        .version(env!("CARGO_PKG_VERSION"))
+
+        // Description
         .about("Download data from the internet quickly as if you were stealing from it 👻")
 
         // Display number of CPUs available on the machine
