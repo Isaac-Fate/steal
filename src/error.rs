@@ -1,3 +1,6 @@
+/// The result type of this crate.
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug)]
 pub enum Error {
     ReqwestError(reqwest::Error),

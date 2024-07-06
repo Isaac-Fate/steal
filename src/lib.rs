@@ -1,8 +1,5 @@
-mod result;
-pub use result::Result;
-
 mod error;
-pub use error::Error;
+pub use error::{ Result, Error };
 
 mod cli;
 pub use cli::run_app;
